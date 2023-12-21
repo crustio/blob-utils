@@ -1,4 +1,4 @@
-package main
+package blobutils
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func main() {
+func _main() {
 	app := cli.NewApp()
 	app.Commands = []cli.Command{
 		{

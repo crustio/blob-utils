@@ -1,4 +1,4 @@
-package main
+package blobutils
 
 func makeBlob(siz int) []byte {
 	b := make([]byte, siz)

@@ -1,4 +1,4 @@
-package main
+package blobutils
 
 import (
 	"github.com/urfave/cli"

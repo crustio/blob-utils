@@ -1,4 +1,4 @@
-package main
+package blobutils
 
 /*
 type rpcHandler func(context.Context, interface{}, network.Stream) error
