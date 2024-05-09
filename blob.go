@@ -6,16 +6,19 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math/big"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-	"log"
-	"math/big"
-	"net/http"
-	"time"
 )
 
 type Client struct {
@@ -83,15 +86,29 @@ func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, erro
 		return common.Hash{}, err
 	}
 
-	value256, _ := uint256.FromBig(big.NewInt(10000000000000000))
-
 	to := common.HexToAddress("0x")
+
+	estimatedBlobGas := len(blobs) * params.BlobTxBlobGasPerBlob // 131072 gas per blob
+	// fmt.Println("Estimated blob Gas:", estimatedBlobGas)
+
+	// blob gas fee multiplier
+	const escalateMultiplier = 2
+
+	// estimate blob fee
+	blobFee := new(big.Int).Mul(big.NewInt(int64(estimatedBlobGas*escalateMultiplier)), maxFeePerBlobGas256.ToBig())
+	// fmt.Println("Estimated Blob Fee:", blobFee)
+
+	// value256, _ := uint256.FromBig(big.NewInt(10000000000000000)) // 0.01ETH
+	value256, _ := uint256.FromBig(blobFee)
 
 	signer := types.NewEIP155Signer(cli.chainId)
 
 	gasLimit := uint64(21000)
 	legacyTx := types.NewTransaction(uint64(nonce), to, value256.ToBig(), gasLimit, gasPrice256.ToBig(), nil)
 	legacySignedTx, err := types.SignTx(legacyTx, signer, cli.privKey)
+	if err != nil {
+		return common.Hash{}, err
+	}
 
 	v, r, s := legacySignedTx.RawSignatureValues()
 
@@ -158,6 +175,9 @@ func (cli *Client) GetBlob(hash common.Hash) ([]byte, error) {
 		"jsonrpc": "2.0",
 		"params":  []string{hash.Hex()},
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := http.Post(cli.rpcUrl, "application/json", bytes.NewBuffer(rj))
 	if err != nil {
@@ -172,7 +192,7 @@ func (cli *Client) GetBlob(hash common.Hash) ([]byte, error) {
 
 	var r []byte
 	for _, blob := range blobs {
-		b := DecodeBlob(common.Hex2Bytes(blob))
+		b := DecodeBlob(common.Hex2Bytes(strings.TrimPrefix(blob, "0x")))
 		r = append(r, b...)
 	}
 
