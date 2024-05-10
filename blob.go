@@ -198,3 +198,34 @@ func (cli *Client) GetBlob(hash common.Hash) ([]byte, error) {
 
 	return r, nil
 }
+
+type signBatchHashResponse struct {
+	Jsonrpc string `json:"jsonrpc"`
+	ID      string `json:"id"`
+	Result  string `json:"result"`
+}
+
+func (cli *Client) SignBatchHash(hash common.Hash) ([]byte, error) {
+	rj, err := json.Marshal(map[string]interface{}{
+		"method":  "ethda_signBatchHash",
+		"id":      "1",
+		"jsonrpc": "2.0",
+		"params":  []string{hash.Hex()},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(cli.rpcUrl, "application/json", bytes.NewBuffer(rj))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var rpcTx *signBatchHashResponse
+	fmt.Printf("%+v\n", rpcTx)
+	if err := json.NewDecoder(resp.Body).Decode(&rpcTx); err != nil {
+		return nil, fmt.Errorf("decode response, %w", err)
+	}
+
+	return common.Hex2Bytes(rpcTx.Result), nil
+}
