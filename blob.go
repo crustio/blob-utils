@@ -57,6 +57,21 @@ func New(
 	}, nil
 }
 
+func (cli *Client) PostBlobReturnSign(ctx context.Context, data []byte) ([]byte, common.Hash, error) {
+	hash, err := cli.PostBlob(ctx, data)
+	if err != nil {
+		return nil, common.Hash{}, err
+	}
+
+	dataHash := common.BytesToHash(data)
+	sig, err := cli.SignBatchHash(dataHash)
+	if err != nil {
+		return nil, common.Hash{}, err
+	}
+
+	return sig, hash, nil
+}
+
 func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, error) {
 	nonce, err := cli.client.NonceAt(ctx, crypto.PubkeyToAddress(cli.privKey.PublicKey), big.NewInt(-1))
 	if err != nil {
@@ -222,7 +237,6 @@ func (cli *Client) SignBatchHash(hash common.Hash) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	var rpcTx *signBatchHashResponse
-	fmt.Printf("%+v\n", rpcTx)
 	if err := json.NewDecoder(resp.Body).Decode(&rpcTx); err != nil {
 		return nil, fmt.Errorf("decode response, %w", err)
 	}
