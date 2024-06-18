@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -24,7 +25,7 @@ import (
 )
 
 const (
-	BlobToAddress = "0x0"
+	BlobToAddress = "0x6Bd9F43c6a3bEF5E325f48DD77c97d4b610C9b58"
 	ZkBlobAddress = "0x0" // TODO
 )
 
@@ -104,8 +105,11 @@ func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, erro
 	}
 
 	priorityGasPrice256 := gasPrice256
-	maxFeePerBlobGas := "3000000000"
-	maxFeePerBlobGas256, err := DecodeUint256String(maxFeePerBlobGas)
+	maxFeePerBlobGas, err := cli.getBlobBaseFee()
+	if err != nil {
+		return common.Hash{}, err
+	}
+	maxFeePerBlobGas256, err := DecodeUint256String(maxFeePerBlobGas.String())
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -310,4 +314,35 @@ func (cli *Client) Verify(batchNumber int64, hash common.Hash, proof [][32]byte)
 	}
 
 	return true, nil
+}
+
+type rpcBlobBaseFee struct {
+	Jsonrpc string       `json:"jsonrpc"`
+	ID      string       `json:"id"`
+	Result  *hexutil.Big `json:"result"`
+}
+
+func (cli *Client) getBlobBaseFee() (*big.Int, error) {
+	rj, err := json.Marshal(map[string]interface{}{
+		"method":  "eth_blobBaseFee",
+		"id":      "1",
+		"jsonrpc": "2.0",
+		"params":  []string{},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(cli.rpcUrl, "application/json", bytes.NewBuffer(rj))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var rpcBBF *rpcBlobBaseFee
+	if err := json.NewDecoder(resp.Body).Decode(&rpcBBF); err != nil {
+		return nil, fmt.Errorf("decode response, %w", err)
+	}
+
+	return rpcBBF.Result.ToInt(), nil
 }

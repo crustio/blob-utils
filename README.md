@@ -14,3 +14,17 @@ go build
 Feel free to open an issue request for more features.
 
 (thanks to @mdehoog for the initial implementation)
+
+## Blob Example
+
+> Note: Before running the Example, you may need to modify the `BlobAddress` at the beginning of `blob.go`
+
+- before run
+
+modify rpcURL and private key in the source code `example/main.go`
+
+- run example:
+
+```shell
+cd example && go run main.go
+```
