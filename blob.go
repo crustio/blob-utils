@@ -19,13 +19,16 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+
+	"encoding/hex"
 )
 
 const (
-	BlobToAddress = "0x6Bd9F43c6a3bEF5E325f48DD77c97d4b610C9b58"
+	BlobToAddress = "0x0"
 	ZkBlobAddress = "0x0" // TODO
 )
 
@@ -193,7 +196,7 @@ type rpcTransaction struct {
 }
 
 type BlobTxSidecar struct {
-	Blobs []string `json:"blobs"` // Blobs needed by the blob pool
+	Blobs []kzg4844.Blob `json:"blobs"` // Blobs needed by the blob pool
 }
 
 type BlobResult struct {
@@ -225,7 +228,7 @@ func (cli *Client) GetBlob(hash common.Hash) ([]byte, error) {
 
 	var r []byte
 	for _, blob := range blobs {
-		b := DecodeBlob(common.Hex2Bytes(strings.TrimPrefix(blob, "0x")))
+		b := DecodeBlob(common.Hex2Bytes(strings.TrimPrefix(hex.EncodeToString(blob[:]), "0x")))
 		r = append(r, b...)
 	}
 
