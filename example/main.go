@@ -10,16 +10,17 @@ import (
 )
 
 const (
-	rpcURL = "https://rpc-testnet.ethda.io" // change to your ethda rpc url
+	l2rpcURL = "https://rpc-testnet.ethda.io" // change to your ethda rpc l2rpcURL
+
 )
 
 func main() {
-	key, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") // change to your private key
+	key, err := crypto.HexToECDSA("fee471a1f9768edca01e1ca4b43edd47cf813d7b5454dda691fa2ec996b9aab1") // change to your private key
 	if err != nil {
 		log.Fatalf("Failed to parse private key: %v", err)
 	}
 
-	client, err := butils.New(rpcURL, key)
+	client, err := butils.New(l2rpcURL, key)
 	if err != nil {
 		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}

@@ -12,9 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crustio/blob-utils/contracts/zkblob"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -28,8 +26,7 @@ import (
 )
 
 const (
-	BlobToAddress = "0x0"
-	ZkBlobAddress = "0x0" // TODO
+	BlobDasAddress = "0x3118B5FA176dC2B8d197045a8D31c9bE21209432"
 )
 
 type Client struct {
@@ -37,7 +34,6 @@ type Client struct {
 	rpcUrl  string
 	privKey *ecdsa.PrivateKey
 	client  *ethclient.Client
-	zkBlob  *zkblob.ZkBlob
 }
 
 func New(
@@ -61,17 +57,11 @@ func New(
 		return nil, fmt.Errorf("get chain id: %w", err)
 	}
 
-	zkBlob, err := zkblob.NewZkBlob(common.HexToAddress(ZkBlobAddress), client)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Client{
 		chainId: chainId,
 		rpcUrl:  rpcUrl,
 		privKey: privKey,
 		client:  client,
-		zkBlob:  zkBlob,
 	}, nil
 }
 
@@ -122,7 +112,7 @@ func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, erro
 		return common.Hash{}, err
 	}
 
-	to := common.HexToAddress(BlobToAddress)
+	to := common.HexToAddress(BlobDasAddress)
 
 	estimatedBlobGas := len(blobs) * params.BlobTxBlobGasPerBlob // 131072 gas per blob
 	// fmt.Println("Estimated blob Gas:", estimatedBlobGas)
@@ -263,60 +253,6 @@ func (cli *Client) SignBatchHash(hash common.Hash) ([]byte, error) {
 	}
 
 	return common.Hex2Bytes(rpcTx.Result), nil
-}
-
-type ProofInfo struct {
-	BatchNumber uint64        `json:"batch_number"`
-	Proof       []common.Hash `json:"proof"`
-}
-
-type ProofResponse struct {
-	Jsonrpc string     `json:"jsonrpc"`
-	ID      string     `json:"id"`
-	Result  *ProofInfo `json:"result"`
-}
-
-func (cli *Client) GetProofByHash(hash common.Hash) (*ProofInfo, error) {
-	rj, err := json.Marshal(map[string]interface{}{
-		"method":  "ethda_getProofByHash",
-		"id":      "1",
-		"jsonrpc": "2.0",
-		"params":  []string{hash.Hex()},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.Post(cli.rpcUrl, "application/json", bytes.NewBuffer(rj))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	proof := &ProofResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&proof); err != nil {
-		return nil, err
-	}
-
-	return proof.Result, nil
-}
-
-func (cli *Client) Verify(batchNumber int64, hash common.Hash, proof [][32]byte) (bool, error) {
-	ok, err := cli.zkBlob.VerifyBlob(&bind.CallOpts{
-		Pending:     false,
-		From:        common.Address{},
-		BlockNumber: nil,
-		Context:     nil,
-	}, big.NewInt(batchNumber), hash, proof)
-	if err != nil {
-		return false, err
-	}
-
-	if !ok {
-		return false, fmt.Errorf("verify internal error")
-	}
-
-	return true, nil
 }
 
 type rpcBlobBaseFee struct {
