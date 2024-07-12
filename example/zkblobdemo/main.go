@@ -18,13 +18,19 @@ var (
 	l2NetworkFlag = &cli.StringFlag{
 		Name:  "rpc",
 		Usage: "custom L2 JSON-RPC endpoint",
-		Value: "http://192.168.18.38:8123",
+		Value: "https://rpc-testnet.ethda.io",
 	}
 
 	l1NetworkFlag = &cli.StringFlag{
 		Name:  "vrpc",
 		Usage: "custom L1 JSON-RPC endpoint",
-		Value: "http://192.168.18.183:8545",
+		Value: "https://rpc-sepolia.ethda.io",
+	}
+
+	zkblobAddressFlag = &cli.StringFlag{
+		Name:  "zkblobAddress",
+		Usage: "custom akblob contract address",
+		Value: "0x9FC2d50067AC5B732cA4D02a2d1A8F286882D909",
 	}
 
 	getRpc    string
@@ -49,6 +55,7 @@ func main() {
 			Action: verifyProof,
 			Flags: []cli.Flag{
 				l1NetworkFlag,
+				zkblobAddressFlag,
 			},
 			Before: beforeVerifyAction,
 		},
@@ -77,6 +84,7 @@ func getProof(cliCtx *cli.Context) error {
 
 	hash := cliCtx.Args().First()
 
+	fmt.Println("get proof from: ", getRpc)
 	proof, err := zkblob.GetProofByHash(getRpc, common.HexToHash(hash))
 	if err != nil {
 		return err
@@ -88,6 +96,11 @@ func getProof(cliCtx *cli.Context) error {
 }
 
 func verifyProof(cliCtx *cli.Context) error {
+	zkblobAddress := cliCtx.String("zkblobAddress")
+	if zkblobAddress == "" {
+		return errors.New("no zkblob contract address provided")
+	}
+
 	if cliCtx.NArg() < 3 {
 		return errors.New("not enough arguments")
 	}
@@ -114,7 +127,7 @@ func verifyProof(cliCtx *cli.Context) error {
 
 	fmt.Println("------------------------------------------------------------------------")
 
-	bv, err := zkblob.NewBlobVerify(verifyRpc, common.HexToAddress("0xe6aFcc425871437d372C6c7E25FA02B486b012Bb"))
+	bv, err := zkblob.NewBlobVerify(verifyRpc, common.HexToAddress(zkblobAddress))
 	if err != nil {
 		return err
 	}
