@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	BlobDasAddress = "0xaED683bceeb0bea678f6d5EFC144aE01F7570929"
+	BlobDasAddress = "0x3318d37C7160dC5582946C80765A61Daa20ff755"
 )
 
 type Client struct {
@@ -118,7 +118,7 @@ func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, erro
 	// fmt.Println("Estimated blob Gas:", estimatedBlobGas)
 
 	// blob gas fee multiplier
-	const escalateMultiplier = 2
+	const escalateMultiplier = 5
 
 	// estimate blob fee
 	blobFee := new(big.Int).Mul(big.NewInt(int64(estimatedBlobGas*escalateMultiplier)), maxFeePerBlobGas256.ToBig())
@@ -129,7 +129,8 @@ func (cli *Client) PostBlob(ctx context.Context, data []byte) (common.Hash, erro
 
 	signer := types.NewEIP155Signer(cli.chainId)
 
-	gasLimit := uint64(21000)
+	gasOffset := 1000
+	gasLimit := uint64(21000 + gasOffset)
 	legacyTx := types.NewTransaction(uint64(nonce), to, value256.ToBig(), gasLimit, gasPrice256.ToBig(), nil)
 	legacySignedTx, err := types.SignTx(legacyTx, signer, cli.privKey)
 	if err != nil {
