@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	BlobDasAddress = "0x3318d37C7160dC5582946C80765A61Daa20ff755"
+	BlobDasAddress = "0xC23fD87AB80750075Ed34D0aAa6d302C9df4a7f9"
 )
 
 type Client struct {

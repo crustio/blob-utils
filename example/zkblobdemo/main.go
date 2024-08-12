@@ -30,7 +30,7 @@ var (
 	zkblobAddressFlag = &cli.StringFlag{
 		Name:  "zkblobAddress",
 		Usage: "custom akblob contract address",
-		Value: "0x9FC2d50067AC5B732cA4D02a2d1A8F286882D909",
+		Value: "0x306c92cb2127Dfbc588373c6aF466147b9b721Fc",
 	}
 
 	getRpc    string
